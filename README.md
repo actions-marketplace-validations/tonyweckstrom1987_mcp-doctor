@@ -8,6 +8,8 @@ Miksi: MCP-asiakkaat (Claude Desktop, Cursor) antavat vähän tietoa, kun palvel
 
 **Demo 3 minuutissa:** [docs/demo.md](docs/demo.md) näyttää saman palvelimen ennen ja jälkeen korjausten (`npm run demo:ennen`, `npm run demo:jalkeen`). *Three-minute before/after demo, English included.*
 
+**CI-käyttöohje:** [docs/ci.md](docs/ci.md) (GitHub Actions -esimerkki, poistumiskoodit, `--strict`).
+
 ## Asennus
 
 Ei asennusta: aja suoraan npm:stä (Node 22.12+ tai 24):
