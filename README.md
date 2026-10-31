@@ -104,7 +104,7 @@ Poistumiskoodit: `0` kunnossa, `1` löydöksiä (virhe, tai varoitus `--strict`-
 | `SCHEMA_PROP_DESC_MISSING` | varoitus | kentältä puuttuu kuvaus |
 | `SCHEMA_PROP_UNTYPED` | varoitus | kentällä ei ole `type`/`enum`/`const`/`$ref`/`anyOf`/`oneOf`/`allOf` |
 | `SCHEMA_ARRAY_ITEMS_MISSING` | varoitus | taulukkokentältä puuttuu `items` (millä tahansa tasolla); esim. Gemini ja OpenAI:n strict-tila hylkäävät skeeman |
-| `SCHEMA_NESTED_DESC_MISSING` / `SCHEMA_NESTED_PROP_UNTYPED` | huomio | sisäkkäisen objektin tai taulukon alkion kentältä puuttuu kuvaus / tyyppi. Polku näkyy viestissä, esim. `entities[].name` |
+| `SCHEMA_NESTED_DESC_MISSING` / `SCHEMA_NESTED_PROP_UNTYPED` | huomio | sisäkkäisen objektin, taulukon alkion tai `anyOf`/`oneOf`/`allOf`-haaran kentältä puuttuu kuvaus / tyyppi. Polku näkyy viestissä, esim. `entities[].name` tai `filter.anyOf[0].name` |
 | `OUTPUT_SCHEMA_NOT_OBJECT` | virhe | `outputSchema` ei ole `object` |
 | `SMOKE_TOOL_NOT_FOUND` | virhe | savuajotiedosto nimeää työkalun, jota palvelimella ei ole |
 | `SMOKE_TOOL_ERROR` | virhe | työkalu palautti `isError`, vaikka virhettä ei odotettu |
@@ -165,18 +165,18 @@ mcp-doctor on tarkoituksella pieni ja rajattu yhteen tehtävään: yksi komento 
 - **Savuajo vain nimeämillesi työkaluille:** työkaluja kutsutaan vain tiedostossa (`--smoke`) nimetyillä, itse määritellyillä argumenteilla. Mitään ei kutsuta arvaamalla.
 - **Ei verkkoa muualle:** työkalu puhuu vain osoittamallesi palvelimelle. Ei API-avaimia, ei tilastoja, ei tiliä.
 - **Eristetty Action:** stdio-palvelin näkee vain nimeämäsi ympäristömuuttujat, ja Actionin syötteet eivät pääse komentoriville.
-- **Pieni ja testattu:** vähän koodia, 120 testiä oikeilla stdio- ja HTTP-testipalvelimilla.
+- **Pieni ja testattu:** vähän koodia, 128 testiä oikeilla stdio- ja HTTP-testipalvelimilla.
 
 ## Rajaukset
 
-Ei tue vanhaa SSE-siirtoa eikä OAuth-kirjautumista. Tarkistaa työkalut, ei `resources`- tai `prompts`-osioita. JSON Schema -validointi on kevyt (rakenne, `required`, tyypit, kuvaukset, sisäkkäiset objektit ja taulukon alkiot 8 tasoon asti), ei täyttä skeemavalidointia. `$ref`-viittauksia ei seurata.
+Ei tue vanhaa SSE-siirtoa eikä OAuth-kirjautumista. Tarkistaa työkalut, ei `resources`- tai `prompts`-osioita. JSON Schema -validointi on kevyt (rakenne, `required`, tyypit, kuvaukset, sisäkkäiset objektit, taulukon alkiot (myös tuple-muoto) ja `anyOf`/`oneOf`/`allOf`-haarat 8 tasoon asti), ei täyttä skeemavalidointia. `$ref`-viittauksia ei seurata.
 
 ## Kehitys
 
 ```bash
 npm ci
 npm run typecheck
-npm test        # 120 testiä, käynnistää oikeita stdio- ja HTTP-testipalvelimia
+npm test        # 128 testiä, käynnistää oikeita stdio- ja HTTP-testipalvelimia
 ```
 
 Testit ajetaan oikeita MCP-palvelimia vastaan (`test/fixtures/`): kunnossa oleva, huonosti määritelty, väärää protokollaversiota puhuva, heti kaatuva sekä sivuttava. Ennen julkaisua koodiin tehtiin tahallisia rikkomisia (mutaatiot), (22 kappaletta), ja jokainen niistä kaatoi testin.

@@ -22,6 +22,7 @@ function lintSchema(tool: string, schema: unknown, kind: "input" | "output"): Fi
   }
   if (kind === "output") return out;
   out.push(...lintObject(tool, schema, "", 0));
+  out.push(...lintBranches(tool, schema, "", 1));
   return out;
 }
 
@@ -41,7 +42,7 @@ function join(prefix: string, name: string): string {
  * sisäkkäisten objektien ja taulukon alkioiden puuttuvat kuvaukset ja tyypit ovat huomioita (info),
  * jotta --strict-ajot eivät kaadu uusiin tarkistuksiin. Rakenteelliset virheet ovat yhtä vakavia tasosta riippumatta.
  */
-function lintObject(tool: string, schema: Record<string, unknown>, prefix: string, depth: number): Finding[] {
+function lintObject(tool: string, schema: Record<string, unknown>, prefix: string, depth: number, inherited: ReadonlySet<string> = new Set()): Finding[] {
   const out: Finding[] = [];
   const nested = prefix !== "";
   const where = nested ? ` (objektissa '${prefix}')` : "";
@@ -56,7 +57,8 @@ function lintObject(tool: string, schema: Record<string, unknown>, prefix: strin
       for (const r of required) {
         // Object.hasOwn: perityt avaimet (esim. "constructor") eivät ole kenttiä.
         if (!props || !Object.hasOwn(props, r)) {
-          if (composed) continue;
+          // Yhdistelmähaara voi vaatia vanhemman kentän (esim. anyOf: [{required: ["a"]}, {required: ["b"]}]).
+          if (composed || inherited.has(r)) continue;
           out.push(find("SCHEMA_REQUIRED_UNKNOWN", "error", tool, `pakollinen kenttä '${join(prefix, r)}' ei ole properties-listassa`));
         }
       }
@@ -82,8 +84,8 @@ function lintObject(tool: string, schema: Record<string, unknown>, prefix: strin
   return out;
 }
 
-/** Laskeutuu kentän skeemaan: sisäkkäiset objektit ja taulukon alkiot. $ref-viittauksia ei seurata. */
-function lintValue(tool: string, def: Record<string, unknown>, path: string, depth: number): Finding[] {
+/** Laskeutuu kentän skeemaan: sisäkkäiset objektit, taulukon alkiot (myös tuple-muoto) ja anyOf/oneOf/allOf-haarat. $ref-viittauksia ei seurata. */
+function lintValue(tool: string, def: Record<string, unknown>, path: string, depth: number, inherited: ReadonlySet<string> = new Set()): Finding[] {
   if (depth > MAX_DEPTH) return [];
   const out: Finding[] = [];
   if (hasType(def, "array")) {
@@ -94,9 +96,36 @@ function lintValue(tool: string, def: Record<string, unknown>, path: string, dep
     } else if (isRecord(items)) {
       out.push(...lintValue(tool, items, `${path}[]`, depth + 1));
     }
+    // Tuple-muoto: items-taulukko (draft-07) tai prefixItems (2020-12). Jokainen alkio tarkistetaan omana polkunaan.
+    const tuple = Array.isArray(def.prefixItems) ? def.prefixItems : Array.isArray(items) ? items : [];
+    tuple.forEach((t, i) => {
+      if (isRecord(t)) out.push(...lintValue(tool, t, `${path}[${i}]`, depth + 1));
+    });
   }
   if (isRecord(def.properties) || def.required !== undefined) {
-    out.push(...lintObject(tool, def, path, depth));
+    out.push(...lintObject(tool, def, path, depth, inherited));
+  }
+  out.push(...lintBranches(tool, def, path, depth + 1));
+  return out;
+}
+
+const BRANCH_KEYS = ["anyOf", "oneOf", "allOf"] as const;
+
+/**
+ * Laskeutuu anyOf/oneOf/allOf-haaroihin. Esim. nullable-taulukko anyOf: [{type: "array"}, {type: "null"}] ilman items-määrittelyä
+ * kaatuu Geminissä samoin kuin suora taulukko. Haaroilta ei vaadita omaa kuvausta (kuvaus on yleensä kentällä itsellään),
+ * ja haaran required saa viitata vanhemman kenttiin.
+ */
+function lintBranches(tool: string, def: Record<string, unknown>, path: string, depth: number): Finding[] {
+  if (depth > MAX_DEPTH) return [];
+  const out: Finding[] = [];
+  const parentProps = new Set(isRecord(def.properties) ? Object.keys(def.properties) : []);
+  for (const key of BRANCH_KEYS) {
+    const branches = def[key];
+    if (!Array.isArray(branches)) continue;
+    branches.forEach((b, i) => {
+      if (isRecord(b)) out.push(...lintValue(tool, b, join(path, `${key}[${i}]`), depth, parentProps));
+    });
   }
   return out;
 }
