@@ -4,6 +4,8 @@ Muoto perustuu [Keep a Changelogiin](https://keepachangelog.com/fi/1.0.0/), ja v
 
 ## [Julkaisematon]
 
+## [0.4.0] - 2026-11-01
+
 ### Lisätty
 
 - Syöteskeeman tarkistus laskeutuu sisäkkäisiin objekteihin ja taulukon alkioihin (8 tasoon asti, `$ref`-viittauksia ei seurata). Löydösviestissä on kentän polku, esim. `entities[].name` tai `opts.depth`.
