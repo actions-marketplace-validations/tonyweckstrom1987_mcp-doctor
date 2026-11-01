@@ -1,6 +1,6 @@
 {
   "name": "@tonyweckstrom/mcp-doctor",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Terveystarkastus MCP-palvelimelle: initialize-kättely, työkalujen skeemojen tarkistus ja savuajo, raportti ja exit-koodi CI:lle. / Health check for MCP servers: handshake, tool schema lint and smoke calls, with a CI-friendly exit code.",
   "license": "MIT",
   "author": "Tony Weckström",

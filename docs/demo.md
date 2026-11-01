@@ -82,7 +82,7 @@ Vika 1 ei ole keksitty. Sama puute (taulukkokenttä ilman kuvausta) löytyi mcp-
 ## Sama CI:ssä
 
 ```yaml
-- uses: tonyweckstrom1987/mcp-doctor@v0.3.0
+- uses: tonyweckstrom1987/mcp-doctor@v0.4.0
   with:
     command: node examples/demo/jalkeen.mjs
     smoke: examples/demo/savuajo.json
