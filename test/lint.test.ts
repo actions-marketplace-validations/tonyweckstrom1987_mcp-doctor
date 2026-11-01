@@ -148,4 +148,57 @@ describe("lintTools", () => {
       expect(ids([{ ...good, outputSchema: { type: "object", properties: { x: { type: "array" } } } }])).toEqual([]);
     });
   });
+  describe("yhdistelmähaarat ja tuple-taulukot", () => {
+    const withProp = (def: Record<string, unknown>) => [{ ...good, inputSchema: { type: "object", properties: { x: def } } }];
+
+    it("nullable-taulukko anyOf-haarassa ilman items-määrittelyä on varoitus", () => {
+      const f = lintTools(withProp({ description: "x", anyOf: [{ type: "array" }, { type: "null" }] }));
+      expect(f).toEqual([expect.objectContaining({ id: "SCHEMA_ARRAY_ITEMS_MISSING", severity: "warning" })]);
+      expect(f[0].message).toContain("'x.anyOf[0]'");
+    });
+
+    it("haaroilta ei vaadita omaa kuvausta, eikä kunnossa oleva haara anna löydöksiä", () => {
+      expect(ids(withProp({ description: "x", anyOf: [{ type: "string" }, { type: "null" }] }))).toEqual([]);
+      expect(ids(withProp({ description: "x", oneOf: [{ type: "array", items: { type: "string" } }, { type: "string" }] }))).toEqual([]);
+    });
+
+    it("oneOf-haaran objekti tarkistetaan kuten sisäkkäinen objekti", () => {
+      const f = lintTools(withProp({ description: "x", oneOf: [{ type: "object", properties: { nimi: { type: "string" } } }] }));
+      expect(f.map((y) => [y.id, y.severity])).toEqual([["SCHEMA_NESTED_DESC_MISSING", "info"]]);
+      expect(f[0].message).toContain("'x.oneOf[0].nimi'");
+    });
+
+    it("allOf-haaran rikkinäinen required on virhe", () => {
+      expect(ids(withProp({ description: "x", type: "object", properties: {}, allOf: [{ properties: { a: { type: "string", description: "a" } }, required: "a" }] }))).toEqual(["SCHEMA_REQUIRED_INVALID"]);
+    });
+
+    it("haaran required saa viitata vanhemman kenttiin (ei väärää virhettä)", () => {
+      const schema = { type: "object", properties: { a: { type: "string", description: "a" }, b: { type: "string", description: "b" } }, anyOf: [{ required: ["a"] }, { required: ["b"] }] };
+      expect(ids([{ ...good, inputSchema: schema }])).toEqual([]);
+      const wrong = { ...schema, anyOf: [{ required: ["c"] }] };
+      expect(ids([{ ...good, inputSchema: wrong }])).toEqual(["SCHEMA_REQUIRED_UNKNOWN"]);
+    });
+
+    it("ylätason allOf-haaran kentät tarkistetaan", () => {
+      const schema = { type: "object", properties: {}, allOf: [{ properties: { q: { type: "array", description: "q" } } }] };
+      const f = lintTools([{ ...good, inputSchema: schema }]);
+      expect(f.map((y) => y.id)).toEqual(["SCHEMA_ARRAY_ITEMS_MISSING"]);
+      expect(f[0].message).toContain("'allOf[0].q'");
+    });
+
+    it("tuple-muotoisen items-taulukon ja prefixItemsin alkiot tarkistetaan", () => {
+      const f = lintTools(withProp({ type: "array", description: "x", items: [{ type: "string" }, { type: "array" }] }));
+      expect(f.map((y) => y.id)).toEqual(["SCHEMA_ARRAY_ITEMS_MISSING"]);
+      expect(f[0].message).toContain("'x[1]'");
+      const g = lintTools(withProp({ type: "array", description: "x", prefixItems: [{ type: "object", properties: { a: { type: "string" } } }] }));
+      expect(g.map((y) => y.message)).toEqual(["kentältä 'x[0].a' puuttuu kuvaus"]);
+    });
+
+    it("syvästi sisäkkäiset haarat katkaistaan eikä kaada tarkistusta", () => {
+      let node: Record<string, unknown> = { type: "array" };
+      for (let i = 0; i < 50; i++) node = { anyOf: [node, { type: "null" }] };
+      const f = lintTools(withProp({ description: "x", ...node }));
+      expect(f.length).toBeLessThanOrEqual(1);
+    });
+  });
 });
