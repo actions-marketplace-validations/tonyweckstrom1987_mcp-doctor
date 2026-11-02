@@ -131,6 +131,29 @@ Savuajo kutsuu **vain** tiedostossa nimettyjä työkaluja, annetuilla argumentei
 
 Kentät: `tool` (pakollinen), `arguments` (oletus `{}`), `expectError` (oletus `false`), `maxMs` (oletus 5000). Pelkkä taulukko käy myös.
 
+## Use as a GitHub Action
+
+Copy this into `.github/workflows/mcp-doctor.yml` (also in [examples/workflow.yml](examples/workflow.yml)). It builds your server, starts it, and fails the job if mcp-doctor finds problems:
+
+```yaml
+name: mcp-doctor
+on: [push, pull_request]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with: { node-version: 24 }
+      - run: npm ci && npm run build   # build your own server
+      - uses: tonyweckstrom1987/mcp-doctor@v0.4.0
+        with:
+          command: node dist/index.js  # your server's start command
+          strict: "true"               # warnings fail the job too
+```
+
+Pin to a version tag or a commit SHA, never `@main`. All inputs are listed below.
+
 ## GitHub Action
 
 ```yaml
@@ -167,7 +190,7 @@ mcp-doctor on tarkoituksella pieni ja rajattu yhteen tehtävään: yksi komento 
 - **Savuajo vain nimeämillesi työkaluille:** työkaluja kutsutaan vain tiedostossa (`--smoke`) nimetyillä, itse määritellyillä argumenteilla. Mitään ei kutsuta arvaamalla.
 - **Ei verkkoa muualle:** työkalu puhuu vain osoittamallesi palvelimelle. Ei API-avaimia, ei tilastoja, ei tiliä.
 - **Eristetty Action:** stdio-palvelin näkee vain nimeämäsi ympäristömuuttujat, ja Actionin syötteet eivät pääse komentoriville.
-- **Pieni ja testattu:** vähän koodia, 128 testiä oikeilla stdio- ja HTTP-testipalvelimilla.
+- **Pieni ja testattu:** vähän koodia, 133 testiä oikeilla stdio- ja HTTP-testipalvelimilla.
 
 ## Rajaukset
 
@@ -178,7 +201,7 @@ Ei tue vanhaa SSE-siirtoa eikä OAuth-kirjautumista. Tarkistaa työkalut, ei `re
 ```bash
 npm ci
 npm run typecheck
-npm test        # 128 testiä, käynnistää oikeita stdio- ja HTTP-testipalvelimia
+npm test        # 133 testiä, käynnistää oikeita stdio- ja HTTP-testipalvelimia
 ```
 
 Testit ajetaan oikeita MCP-palvelimia vastaan (`test/fixtures/`): kunnossa oleva, huonosti määritelty, väärää protokollaversiota puhuva, heti kaatuva sekä sivuttava. Ennen julkaisua koodiin tehtiin tahallisia rikkomisia (mutaatiot), (22 kappaletta), ja jokainen niistä kaatoi testin.
