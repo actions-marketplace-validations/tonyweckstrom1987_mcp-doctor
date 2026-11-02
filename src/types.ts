@@ -21,6 +21,8 @@ export interface Report {
   toolCount: number;
   findings: Finding[];
   smoke: SmokeResult[];
+  /** Tokenimittari: työkalumäärittelyjen arvioitu koko (puuttuu, jos työkalulistaa ei saatu). */
+  tokens?: { total: number; perTool: { tool: string; tokens: number }[]; budget?: number; method: "chars/4" };
   summary: { errors: number; warnings: number; infos: number };
   /** true, kun virheitä ei ole (--strict: myös varoitukset kaatavat). */
   ok: boolean;

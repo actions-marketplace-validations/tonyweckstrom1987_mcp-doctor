@@ -27,7 +27,7 @@ jobs:
 
 Pin to a version tag or a commit SHA, never `@main`.
 
-Inputs: `command` or `url` (use one of them), `smoke`, `strict`, `timeout-ms`, `env-names`, `bearer-env`.
+Inputs: `command` or `url` (use one of them), `smoke`, `strict`, `timeout-ms`, `env-names`, `bearer-env`, `auth` (OAuth check for `url`), `max-tokens` (token budget).
 
 - A stdio server sees only the environment variables you name. Set the values in the `env` block of the action step and list the names (separated by spaces) in `env-names`.
 - For an HTTP server, set the token from a secret in the `env` block and pass the variable's name in `bearer-env`.
@@ -76,6 +76,8 @@ Yhteenveto: 0 virhettä, 0 varoitusta, 0 huomiota -> OK
 | `--timeout-ms <number>` | timeout for a single request, default 10000 |
 | `--env <NAME>` | pass an environment variable to the stdio server (repeatable) |
 | `--bearer-env <NAME>` | read the HTTP server's Bearer token from this variable |
+| `--auth` | OAuth check for an HTTP server (401, WWW-Authenticate, RFC 9728 and 8414 metadata, PKCE S256, refresh_token) |
+| `--max-tokens <number>` | token budget: estimated total size of the tool definitions; exceeding it is an error |
 | `--version` | print the version |
 
 Exit codes: `0` healthy, `1` findings (an error, or a warning with `--strict`), `2` usage or file error, `3` unexpected internal error.
@@ -115,6 +117,9 @@ Fields: `tool` (required), `arguments` (default `{}`), `expectError` (default `f
 | `SCHEMA_PROP_UNTYPED` | warning | a property has none of `type`/`enum`/`const`/`$ref`/`anyOf`/`oneOf`/`allOf` |
 | `SCHEMA_ARRAY_ITEMS_MISSING` | warning | an array property has no `items` (at any level); for example Gemini and OpenAI strict mode reject such schemas |
 | `SCHEMA_NESTED_DESC_MISSING` / `SCHEMA_NESTED_PROP_UNTYPED` | info | a property inside a nested object, array item or `anyOf`/`oneOf`/`allOf` branch has no description / type. The path is in the message, e.g. `entities[].name` |
+| `TOOL_TOKENS_HIGH` | info | a single tool definition costs an estimated 1,000+ tokens |
+| `TOOLS_TOKEN_BUDGET_EXCEEDED` | error | the estimated total size of the tool definitions exceeds `--max-tokens` |
+| `AUTH_*` (`--auth`) | error / warning / info | OAuth: `AUTH_RESOURCE_METADATA_MISSING`, `AUTH_SERVERS_MISSING`, `AUTH_SERVER_METADATA_MISSING`, `AUTH_ENDPOINT_MISSING`, `AUTH_PKCE_S256_MISSING`, `AUTH_INSECURE_URL` (error); `AUTH_WWW_AUTHENTICATE_MISSING`, `AUTH_RESOURCE_MISMATCH`, `AUTH_REFRESH_TOKEN_UNSUPPORTED` (warning); `AUTH_RESOURCE_METADATA_HINT_MISSING`, `AUTH_REGISTRATION_UNSUPPORTED`, `AUTH_NOT_REQUIRED`, `AUTH_OK` (info) |
 | `OUTPUT_SCHEMA_NOT_OBJECT` | error | `outputSchema` is not an `object` |
 | `SMOKE_TOOL_NOT_FOUND` | error | the smoke file names a tool the server does not have |
 | `SMOKE_TOOL_ERROR` | error | the tool returned `isError` although no error was expected |
@@ -126,9 +131,35 @@ Fields: `tool` (required), `arguments` (default `{}`), `expectError` (default `f
 
 Nested schemas are checked up to 8 levels deep. The check is lightweight (structure, `required`, types, descriptions), not full JSON Schema validation, and `$ref` references are not followed.
 
+## Token budget
+
+Clients (Claude, Cursor and others) send every tool's name, description and input schema to the model **in every request**, whether the tool is used or not. With several servers, tool definitions can take tens of thousands of tokens before the user has said anything. mcp-doctor reports the size on every run:
+
+```
+$ npx @tonyweckstrom/mcp-doctor --max-tokens 200 -- node examples/demo/jalkeen.mjs
+VIRHE    [TOOLS_TOKEN_BUDGET_EXCEEDED] työkalumäärittelyt vievät arviolta 257 tokenia, raja on 200 (--max-tokens); suurimmat: add_note 104, search_notes 84, delete_note 69
+Tokenit (arvio): työkalumäärittelyt yhteensä 257 / raja 200; suurimmat: add_note 104, search_notes 84, delete_note 69
+```
+
+`--max-tokens 4000` (in the action: `max-tokens: "4000"`) turns it into a CI budget: when someone adds a tool or grows a description past the limit, the job fails and the message names the largest tools. The estimate is characters / 4, so treat it as a guide (roughly ±25 % depending on the model's tokenizer). It is good for comparison and budgets, not for billing. In the JSON report the numbers are in the `tokens` field.
+
+## OAuth check (`--auth`)
+
+Many MCP login problems ("connection expired", login never starts, a bare 401) come from the server's or the authorization server's metadata. `--auth` checks them without logging in:
+
+```bash
+npx @tonyweckstrom/mcp-doctor --auth --url https://your-server.example.com/mcp
+```
+
+1. Unauthenticated `initialize`: the server should answer `401` with `WWW-Authenticate: Bearer resource_metadata="..."`.
+2. Protected resource metadata (RFC 9728): `resource` matches the server URL and `authorization_servers` is present.
+3. Authorization server metadata (RFC 8414 or OpenID Connect discovery): https endpoints, PKCE `S256`, the `refresh_token` grant (without it users must log in again whenever the token expires) and client registration.
+
+The check never sends credentials. Note that it also makes unauthenticated GET requests to the authorization server that the server advertises. If you also pass `--bearer-env`, the main check (tools, smoke calls) runs with the token.
+
 ## Security
 
-- The tool starts the command you give it and talks only to that server. It makes no other network connections and needs no API keys.
+- The tool starts the command you give it and talks only to that server. The only exception is `--auth`, which also fetches the advertised authorization server's metadata without credentials. No API keys are needed.
 - A stdio server receives only `PATH` and basic variables. Other environment variables are passed only if you name them with `--env`.
 - The Bearer token is read from an environment variable, not from the command line, and it is never printed. The printed target address omits query parameters.
 - In the printed target line of a stdio command, arguments that look secret are masked (`--token`, `--api-key`, `--password`, `NAME_TOKEN=…`, credentials and query parameters in URLs). This is a safety net: pass secrets with `--env` rather than on the command line.
@@ -137,7 +168,7 @@ Nested schemas are checked up to 8 levels deep. The check is lightweight (struct
 
 ## Limitations
 
-No legacy SSE transport and no OAuth login. It checks tools only, not `resources` or `prompts`.
+No legacy SSE transport. `--auth` checks the OAuth configuration but does not log in. It checks tools only, not `resources` or `prompts`.
 
 ## More
 
