@@ -164,6 +164,16 @@ describe("CLI: HTTP-palvelin", () => {
     expect(io.out).toContain("CONNECT_FAILED");
   });
 
+  it("--auth: 401 ilman WWW-Authenticatea ja metatietoja raportoidaan, tokenia ei lähetetä tarkistuksessa", async () => {
+    const io = makeIo({ DOCTOR_TOKEN: TOKEN });
+    expect(await main(["--url", url, "--auth", "--bearer-env", "DOCTOR_TOKEN", "--json"], io)).toBe(1);
+    const r = JSON.parse(io.out);
+    const ids = r.findings.map((f: { id: string }) => f.id);
+    expect(ids).toContain("AUTH_WWW_AUTHENTICATE_MISSING");
+    expect(ids).toContain("AUTH_RESOURCE_METADATA_MISSING");
+    expect(r.server.name).toBe("http-palvelin"); // varsinainen tarkastus ajetaan silti tokenilla
+  });
+
   it("kohde tulostuu ilman kyselyparametreja ja tunnuksia", async () => {
     const io = makeIo({ DOCTOR_TOKEN: TOKEN });
     await main(["--url", `${url}?salainen=abc`, "--bearer-env", "DOCTOR_TOKEN"], io);

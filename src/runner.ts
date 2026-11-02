@@ -3,6 +3,7 @@ import { ErrorCode, McpError } from "@modelcontextprotocol/sdk/types.js";
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import { lintTools } from "./lint.js";
 import { summarize } from "./report.js";
+import { measureTools, tokenFindings } from "./tokens.js";
 import { short } from "./text.js";
 import { VERSIO } from "./versio.js";
 import type { Finding, Report, SmokeCall, SmokeResult, ToolLike } from "./types.js";
@@ -13,6 +14,8 @@ export interface DiagnoseOptions {
   smoke?: SmokeCall[];
   timeoutMs: number;
   strict: boolean;
+  /** Tokenimittarin raja (--max-tokens): ylitys on virhe. */
+  maxTokens?: number;
   /** Palauttaa viimeisimmän palvelimen stderr-tekstin (vain stdio), liitetään yhteysvirheeseen. */
   stderrTail?: () => string;
 }
@@ -33,10 +36,11 @@ function firstText(content: unknown): string {
   return "";
 }
 
-function build(opts: DiagnoseOptions, server: Report["server"], toolCount: number, findings: Finding[], smoke: SmokeResult[]): Report {
+function build(opts: DiagnoseOptions, server: Report["server"], toolCount: number, findings: Finding[], smoke: SmokeResult[], tokens?: Report["tokens"]): Report {
   const summary = summarize(findings);
   const ok = summary.errors === 0 && (!opts.strict || summary.warnings === 0);
-  return { version: 1, target: opts.target, server, toolCount, findings, smoke, summary, ok };
+  const base = { version: 1 as const, target: opts.target, server, toolCount, findings, smoke };
+  return tokens ? { ...base, tokens, summary, ok } : { ...base, summary, ok };
 }
 
 /** Yhdistää palvelimeen, tarkistaa työkalut ja ajaa savuajon. Ei koskaan heitä: virheet ovat löydöksiä. */
@@ -66,6 +70,7 @@ export async function diagnose(opts: DiagnoseOptions): Promise<Report> {
     const tools: ToolLike[] = [];
     // Tosi, kun työkalulistaa ei saatu (kyky puuttuu tai tools/list epäonnistui): savuajon "työkalua ei löydy" ei silloin tarkoita, että työkalua ei ole.
     let toolListMissing = false;
+    let tokens: Report["tokens"];
     if (!caps?.tools) {
       toolListMissing = true;
       findings.push({ id: "TOOLS_CAPABILITY_MISSING", severity: "warning", message: "palvelin ei ilmoita tools-kykyä, työkaluja ei listata" });
@@ -97,6 +102,10 @@ export async function diagnose(opts: DiagnoseOptions): Promise<Report> {
         findings.push({ id: "TOOLS_EMPTY", severity: "warning", message: "palvelin ilmoittaa tools-kyvyn mutta työkalulista on tyhjä" });
       }
       findings.push(...lintTools(tools));
+      if (!toolListMissing) {
+        tokens = measureTools(tools, opts.maxTokens);
+        findings.push(...tokenFindings(tokens));
+      }
     }
 
     const byName = new Map(tools.map((t) => [t.name, t]));
@@ -140,7 +149,7 @@ export async function diagnose(opts: DiagnoseOptions): Promise<Report> {
         smokeResults.push({ tool: call.tool, ok, ms: Date.now() - start });
       }
     }
-    return build(opts, server, tools.length, findings, smokeResults);
+    return build(opts, server, tools.length, findings, smokeResults, tokens);
   } finally {
     await client.close().catch(() => undefined);
   }
