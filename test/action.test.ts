@@ -5,7 +5,8 @@ import { parse } from "yaml";
 
 // Marketplace-vaatimukset action.yml:lle. Tiedosto luetaan oikealla YAML-jäsentimellä:
 // rivipohjainen luku ei huomannut lainaamatonta ": " -yhdistelmää, joka kaatoi CI:n (#18).
-const lue = (polku: string) => readFileSync(fileURLToPath(new URL(`../${polku}`, import.meta.url)), "utf8");
+// Windowsin git (core.autocrlf) voi muuttaa rivinvaihdot CRLF:ksi: normalisoidaan, jotta testit toimivat kaikkialla.
+const lue = (polku: string) => readFileSync(fileURLToPath(new URL(`../${polku}`, import.meta.url)), "utf8").replace(/\r\n/g, "\n");
 const yml = lue("action.yml");
 const doc = parse(yml) as { name?: unknown; description?: unknown };
 const ylataso = (avain: "name" | "description") => (typeof doc[avain] === "string" ? doc[avain] : undefined);
