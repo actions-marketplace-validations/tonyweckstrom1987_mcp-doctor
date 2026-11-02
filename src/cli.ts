@@ -2,8 +2,9 @@ import { readFileSync } from "node:fs";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
+import { authCheck } from "./auth.js";
 import { redactArgs } from "./redact.js";
-import { formatJson, formatText } from "./report.js";
+import { formatJson, formatText, summarize } from "./report.js";
 import { diagnose } from "./runner.js";
 import { parseSmokeSpec } from "./smoke.js";
 import { short } from "./text.js";
@@ -36,6 +37,8 @@ Valinnat:
   --max-tokens <luku>    tokenimittarin raja: työkalumäärittelyjen arvioitu yhteiskoko ei saa ylittää tätä (ylitys on virhe)
   --env <NIMI>           välitä ympäristömuuttuja stdio-palvelimelle (toistettava)
   --bearer-env <NIMI>    lue HTTP-palvelimen Bearer-token tästä ympäristömuuttujasta
+  --auth                 HTTP-palvelimen OAuth-tarkistus: 401 ja WWW-Authenticate, resurssin ja valtuutuspalvelimen
+                         metatiedot, PKCE S256, refresh_token (kirjautumattomat pyynnöt, myös valtuutuspalvelimelle)
   --version              tulosta versio
   --help                 tämä ohje
 
@@ -48,7 +51,7 @@ interface Args {
   bools: Set<string>;
 }
 
-const BOOL_FLAGS = new Set(["json", "strict", "help", "version"]);
+const BOOL_FLAGS = new Set(["json", "strict", "help", "version", "auth"]);
 const VALUE_FLAGS = new Set(["smoke", "timeout-ms", "env", "bearer-env", "url", "max-tokens"]);
 
 function parseArgs(argv: string[]): Args {
@@ -120,6 +123,8 @@ export async function main(argv: string[], io: CliIo): Promise<number> {
       smoke = parseSmokeSpec(text);
     }
 
+    if (args.bools.has("auth") && url === undefined) throw new UsageError("--auth koskee vain --url-palvelinta");
+
     let transport: Transport;
     let target: string;
     let stderrTail: (() => string) | undefined;
@@ -163,7 +168,14 @@ export async function main(argv: string[], io: CliIo): Promise<number> {
       target = redactArgs(args.command).join(" "); // salaiselta näyttävät argumentit peitetään tulosteista
     }
 
-    const report = await diagnose({ transport, target, smoke, timeoutMs, strict: args.bools.has("strict"), maxTokens, stderrTail });
+    const strict = args.bools.has("strict");
+    const authFindings = args.bools.has("auth") && url !== undefined ? await authCheck(url, (u, init) => fetch(u, init), timeoutMs) : [];
+    let report = await diagnose({ transport, target, smoke, timeoutMs, strict, maxTokens, stderrTail });
+    if (authFindings.length > 0) {
+      const findings = [...authFindings, ...report.findings];
+      const summary = summarize(findings);
+      report = { ...report, findings, summary, ok: summary.errors === 0 && (!strict || summary.warnings === 0) };
+    }
     io.stdout(args.bools.has("json") ? formatJson(report) : formatText(report));
     return report.ok ? EXIT_OK : EXIT_FINDINGS;
   } catch (err) {

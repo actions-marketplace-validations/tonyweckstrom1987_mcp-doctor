@@ -31,6 +31,10 @@ inputs:
     description: Välilyönnillä erotetut ympäristömuuttujien nimet, jotka välitetään stdio-palvelimelle (aseta arvot action-askeleen env-lohkossa). Muita muuttujia palvelin ei näe.
     required: false
     default: ""
+  auth:
+    description: 'Jos "true" ja url on annettu, tarkistetaan myös OAuth-asetukset (401, metatiedot, PKCE, refresh_token) kirjautumatta.'
+    required: false
+    default: "false"
   max-tokens:
     description: Tokenimittarin raja. Jos työkalumäärittelyjen arvioitu yhteiskoko ylittää rajan, ajo kaatuu. Tyhjä = ei rajaa, koko raportoidaan silti.
     required: false
@@ -63,6 +67,7 @@ runs:
         INPUT_BEARER_ENV: ${{ inputs.bearer-env }}
         INPUT_ENV_NAMES: ${{ inputs.env-names }}
         INPUT_MAX_TOKENS: ${{ inputs.max-tokens }}
+        INPUT_AUTH: ${{ inputs.auth }}
       run: |
         # Syötteet välitetään ympäristömuuttujina, ei suoraan komentoriville (ei komentoinjektiota).
         args=()
@@ -74,10 +79,12 @@ runs:
           [ -n "$INPUT_COMMAND" ] && { echo "Anna joko command tai url, ei molempia" >&2; exit 2; }
           [ -n "$INPUT_ENV_NAMES" ] && { echo "env-names koskee vain command-palvelinta" >&2; exit 2; }
           [ -n "$INPUT_BEARER_ENV" ] && args+=(--bearer-env "$INPUT_BEARER_ENV")
+          [ "$INPUT_AUTH" = "true" ] && args+=(--auth)
           args+=(--url "$INPUT_URL")
         else
           [ -z "$INPUT_COMMAND" ] && { echo "Anna command tai url" >&2; exit 2; }
           [ -n "$INPUT_BEARER_ENV" ] && { echo "bearer-env koskee vain url-palvelinta" >&2; exit 2; }
+          [ "$INPUT_AUTH" = "true" ] && { echo "auth koskee vain url-palvelinta" >&2; exit 2; }
           set -f # ei tiedostonimilaajennusta (esim. env-names: "*")
           for name in $INPUT_ENV_NAMES; do
             [[ "$name" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || { echo "Virheellinen ympäristömuuttujan nimi: $name" >&2; exit 2; }

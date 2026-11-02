@@ -8,6 +8,7 @@ Muoto perustuu [Keep a Changelogiin](https://keepachangelog.com/fi/1.0.0/), ja v
 
 - Tokenimittari: raportti kertoo, montako tokenia palvelimen työkalumäärittelyt (nimi, kuvaus, syöteskeema) vievät arviolta mallin kontekstista jokaisessa pyynnössä, yhteensä ja kolme suurinta työkalua. JSON-raportissa kenttä `tokens` (`total`, `perTool`, `budget`, `method`). Arvio on merkit / 4, eli suuntaa antava (noin ±25 % mallin tokenisoijasta riippuen).
 - `--max-tokens <luku>` ja actionin syöte `max-tokens`: CI-raja työkalumäärittelyjen arvioidulle yhteiskoolle. Ylitys on virhe `TOOLS_TOKEN_BUDGET_EXCEEDED`, ja viestissä ovat suurimmat työkalut.
+- `--auth`: HTTP-palvelimen OAuth-tarkistus MCP:n valtuutusmäärittelyn mukaan. Kirjautumaton initialize-pyyntö (odotetaan 401 ja `WWW-Authenticate: Bearer` + `resource_metadata`), suojatun resurssin metatiedot (RFC 9728, `resource` ja `authorization_servers`) sekä valtuutuspalvelimen metatiedot (RFC 8414 tai OpenID Connect): `authorization_endpoint`, `token_endpoint`, PKCE `S256`, `refresh_token`-myöntö, asiakkaan rekisteröinti ja https. Uudet löydökset `AUTH_*`. Tarkistus ei lähetä tunnuksia; se tekee kirjautumattomia GET-pyyntöjä myös palvelimen ilmoittamalle valtuutuspalvelimelle. Peruste: kysynnän kartoitus 2.11.2026, Claude Coden OAuth-ongelmat (esim. vanheneva yhteys ilman refresh_tokenia).
 - `TOOL_TOKENS_HIGH` (huomio): yksittäisen työkalun määrittely vie arviolta yli 1 000 tokenia. Huomio ei kaada `--strict`-ajoja.
 
 ## [0.4.0] - 2026-11-01
