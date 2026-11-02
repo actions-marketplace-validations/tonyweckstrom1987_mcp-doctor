@@ -1,6 +1,10 @@
 name: MCP Doctor
-description: Tarkistaa MCP-palvelimen kunnon (initialize-kättely, työkalujen skeemat, savuajo) ja kaataa työnkulun löydöksistä. / Health check for MCP servers.
+description: Health check for MCP servers: handshake, tool schema lint and smoke calls. Fails the workflow on findings.
 author: tonyweckstrom1987
+
+branding:
+  icon: activity
+  color: blue
 
 inputs:
   command:
