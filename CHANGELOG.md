@@ -4,6 +4,10 @@ Muoto perustuu [Keep a Changelogiin](https://keepachangelog.com/fi/1.0.0/), ja v
 
 ## [Julkaisematon]
 
+### Muutettu
+
+- `README.md` on nyt englanniksi (Marketplace-sivu näyttää sen). Aiempi suomenkielinen README siirrettiin sellaisenaan tiedostoon `README.fi.md`, johon lisättiin vain linkki englanninkieliseen versioon.
+
 ## [0.4.1] - 2026-11-02
 
 ### Lisätty

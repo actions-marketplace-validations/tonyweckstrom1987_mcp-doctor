@@ -24,11 +24,11 @@ jobs:
       - uses: tonyweckstrom1987/mcp-doctor@v0.4.1
         with:
           command: node dist/index.js
-          smoke: smoke.json                 # valinnainen, katso README: Savuajo
+          smoke: smoke.json                 # valinnainen, katso README.fi.md: Savuajo
           strict: "true"                    # valinnainen, katso alla
 ```
 
-Lukitse Action versiotagiin (`@v0.4.1`) tai commit-SHA:han, älä `@main`-haaraan. Kaikki syötteet (`command`, `url`, `smoke`, `strict`, `timeout-ms`, `env-names`, `bearer-env`) on kuvattu [README:n GitHub Action -osiossa](../README.md#github-action) ja tiedostossa [`action.yml`](../action.yml). Anna joko `command` tai `url`, ei molempia.
+Lukitse Action versiotagiin (`@v0.4.1`) tai commit-SHA:han, älä `@main`-haaraan. Kaikki syötteet (`command`, `url`, `smoke`, `strict`, `timeout-ms`, `env-names`, `bearer-env`) on kuvattu [README:n GitHub Action -osiossa](../README.fi.md#github-action) ja tiedostossa [`action.yml`](../action.yml). Anna joko `command` tai `url`, ei molempia.
 
 Ilman Actionia voit ajaa CLI:n suoraan:
 

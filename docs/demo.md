@@ -93,7 +93,7 @@ Vika 1 ei ole keksitty. Sama puute (taulukkokenttä ilman kuvausta) löytyi mcp-
 
 - **Miksi puuttuva kuvaus on vain varoitus?** Palvelin toimii protokollan mukaan. Haitta näkyy mallin käytöksessä, ei virheenä. `--strict` tekee varoituksista CI:ssä kaatavia.
 - **Miksi ei kutsuta kaikkia työkaluja automaattisesti?** Työkalu voi muuttaa dataa (kuten `delete_note`). Turvallinen oletus on kutsua vain sitä, minkä ihminen on nimennyt.
-- **Mitä tämä ei tarkista?** `resources`- ja `prompts`-osiot, OAuth, vanha SSE-siirto ja täysi JSON Schema -validointi jäävät pois. Ks. README, kohta Rajaukset.
+- **Mitä tämä ei tarkista?** `resources`- ja `prompts`-osiot, OAuth, vanha SSE-siirto ja täysi JSON Schema -validointi jäävät pois. Ks. README.fi.md, kohta Rajaukset.
 
 ---
 
