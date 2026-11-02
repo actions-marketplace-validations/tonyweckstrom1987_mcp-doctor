@@ -4,6 +4,22 @@ Muoto perustuu [Keep a Changelogiin](https://keepachangelog.com/fi/1.0.0/), ja v
 
 ## [Julkaisematon]
 
+## [0.4.1] - 2026-11-02
+
+### Lisätty
+
+- GitHub Marketplace -julkaisu: Action on julkaistu nimellä "MCP Doctor Health Check" (branding, kuvaus alle 125 merkkiä).
+
+### Korjattu
+
+- `action.yml`: `description`-arvon lainaamaton kaksoispiste rikkoi YAML:n ja kaatoi CI:n (#18). Arvo on nyt lainausmerkeissä.
+- `action.yml`: nimi on "MCP Doctor Health Check", koska "MCP Doctor" oli Marketplacessa varattu (#19).
+
+### Muutettu
+
+- `test/action.test.ts` lukee `action.yml`:n `yaml`-paketilla rivipohjaisen luvun sijaan, ja uusi testi kaatuu lainaamattomaan `: `-yhdistelmään.
+- README, `examples/workflow.yml`, `docs/ci.md` ja `docs/demo.md` viittaavat Actioniin muodossa `@v0.4.1`.
+
 ## [0.4.0] - 2026-11-01
 
 ### Lisätty

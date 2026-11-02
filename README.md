@@ -146,7 +146,7 @@ jobs:
       - uses: actions/setup-node@v7
         with: { node-version: 24 }
       - run: npm ci && npm run build   # build your own server
-      - uses: tonyweckstrom1987/mcp-doctor@v0.4.0
+      - uses: tonyweckstrom1987/mcp-doctor@v0.4.1
         with:
           command: node dist/index.js  # your server's start command
           strict: "true"               # warnings fail the job too
@@ -159,14 +159,14 @@ Pin to a version tag or a commit SHA, never `@main`. All inputs are listed below
 ```yaml
 - uses: actions/checkout@v7
 - run: npm ci && npm run build        # oma palvelimesi
-- uses: tonyweckstrom1987/mcp-doctor@v0.4.0
+- uses: tonyweckstrom1987/mcp-doctor@v0.4.1
   with:
     command: node dist/index.js
     smoke: smoke.json
     strict: "true"
 ```
 
-Lukitse Action versiotagiin (`@v0.4.0`) tai tiukemmin commit-SHA:han, älä `@main`-haaraan. Syötteet: `command` tai `url`, `smoke`, `strict`, `timeout-ms`, `env-names`, `bearer-env`. Stdio-palvelin näkee vain nimeämäsi ympäristömuuttujat: aseta arvot action-askeleen `env`-lohkossa ja listaa nimet syötteellä `env-names` (välilyönnein erotettuna). HTTP-palvelimen tokenin aseta samoin `env`-lohkossa secretistä ja anna muuttujan nimi syötteellä `bearer-env`. Syötteet välitetään kuoreen ympäristömuuttujina, ei komentoriville, joten ne eivät voi injektoida komentoja.
+Lukitse Action versiotagiin (`@v0.4.1`) tai tiukemmin commit-SHA:han, älä `@main`-haaraan. Syötteet: `command` tai `url`, `smoke`, `strict`, `timeout-ms`, `env-names`, `bearer-env`. Stdio-palvelin näkee vain nimeämäsi ympäristömuuttujat: aseta arvot action-askeleen `env`-lohkossa ja listaa nimet syötteellä `env-names` (välilyönnein erotettuna). HTTP-palvelimen tokenin aseta samoin `env`-lohkossa secretistä ja anna muuttujan nimi syötteellä `bearer-env`. Syötteet välitetään kuoreen ympäristömuuttujina, ei komentoriville, joten ne eivät voi injektoida komentoja.
 
 ## Turvallisuus
 
