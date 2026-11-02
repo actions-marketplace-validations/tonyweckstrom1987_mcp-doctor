@@ -181,6 +181,50 @@ describe("CLI: HTTP-palvelin", () => {
   });
 });
 
+describe("CLI: --auth ilman tokenia", () => {
+  let http: Server;
+  let base: string;
+
+  beforeAll(async () => {
+    http = createServer((req, res) => {
+      const json = (o: unknown) => res.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify(o));
+      if (req.url === "/.well-known/oauth-protected-resource/mcp") return json({ resource: `${base}/mcp`, authorization_servers: [base] });
+      if (req.url === "/.well-known/oauth-authorization-server") {
+        return json({
+          issuer: base,
+          authorization_endpoint: `${base}/authorize`,
+          token_endpoint: `${base}/token`,
+          registration_endpoint: `${base}/register`,
+          code_challenge_methods_supported: ["S256"],
+          grant_types_supported: ["authorization_code", "refresh_token"],
+        });
+      }
+      res.writeHead(401, { "content-type": "application/json", "www-authenticate": `Bearer resource_metadata="${base}/.well-known/oauth-protected-resource/mcp"` }).end("{}");
+    });
+    await new Promise<void>((r) => http.listen(0, "127.0.0.1", r));
+    base = `http://127.0.0.1:${(http.address() as AddressInfo).port}`;
+  });
+
+  afterAll(() => new Promise<void>((r) => http.close(() => r())));
+
+  it("kunnossa oleva OAuth-palvelin: kirjautumisvaatimus ei ole virhe (exit 0, ei CONNECT_FAILED)", async () => {
+    const io = makeIo();
+    expect(await main(["--url", `${base}/mcp`, "--auth", "--json"], io)).toBe(0);
+    const ids = JSON.parse(io.out).findings.map((f: { id: string }) => f.id);
+    expect(ids).toContain("AUTH_OK");
+    expect(ids).toContain("AUTH_LOGIN_REQUIRED");
+    expect(ids).not.toContain("CONNECT_FAILED");
+  });
+
+  it("tokenin kanssa CONNECT_FAILED säilyy virheenä (väärä token ei peity)", async () => {
+    const io = makeIo({ DOCTOR_TOKEN: "vaara-token-xxxxxxxxxx" });
+    expect(await main(["--url", `${base}/mcp`, "--auth", "--bearer-env", "DOCTOR_TOKEN", "--json"], io)).toBe(1);
+    const ids = JSON.parse(io.out).findings.map((f: { id: string }) => f.id);
+    expect(ids).toContain("CONNECT_FAILED");
+    expect(ids).not.toContain("AUTH_LOGIN_REQUIRED");
+  });
+});
+
 describe("CLI: stdio-kohde ei vuoda salaisuuksia", () => {
   it("komentorivin token ei näy teksti- eikä JSON-raportissa, mutta palvelin saa sen", async () => {
     const argv = ["--", NODE, fixture("good-server.mjs"), "--token", "SALAINEN_ARVO_42"];
