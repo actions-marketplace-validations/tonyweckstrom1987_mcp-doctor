@@ -25,6 +25,11 @@ export function formatText(r: Report): string {
     lines.push("Savuajo:");
     for (const s of r.smoke) lines.push(`  ${s.ok ? "OK    " : "VIRHE "} ${short(s.tool)} (${s.ms} ms)`);
   }
+  if (r.tokens && r.tokens.perTool.length > 0) {
+    const top = r.tokens.perTool.slice(0, 3).map((t) => `${short(t.tool)} ${t.tokens}`).join(", ");
+    const budget = r.tokens.budget !== undefined ? ` / raja ${r.tokens.budget}` : "";
+    lines.push(`Tokenit (arvio): työkalumäärittelyt yhteensä ${r.tokens.total}${budget}; suurimmat: ${top}`);
+  }
   const { errors, warnings, infos } = r.summary;
   lines.push(`Yhteenveto: ${errors} virhettä, ${warnings} varoitusta, ${infos} huomiota -> ${r.ok ? "OK" : "EPÄONNISTUI"}`);
   return lines.join("\n") + "\n";

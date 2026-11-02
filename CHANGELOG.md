@@ -4,6 +4,12 @@ Muoto perustuu [Keep a Changelogiin](https://keepachangelog.com/fi/1.0.0/), ja v
 
 ## [Julkaisematon]
 
+### Lisätty
+
+- Tokenimittari: raportti kertoo, montako tokenia palvelimen työkalumäärittelyt (nimi, kuvaus, syöteskeema) vievät arviolta mallin kontekstista jokaisessa pyynnössä, yhteensä ja kolme suurinta työkalua. JSON-raportissa kenttä `tokens` (`total`, `perTool`, `budget`, `method`). Arvio on merkit / 4, eli suuntaa antava (noin ±25 % mallin tokenisoijasta riippuen).
+- `--max-tokens <luku>` ja actionin syöte `max-tokens`: CI-raja työkalumäärittelyjen arvioidulle yhteiskoolle. Ylitys on virhe `TOOLS_TOKEN_BUDGET_EXCEEDED`, ja viestissä ovat suurimmat työkalut.
+- `TOOL_TOKENS_HIGH` (huomio): yksittäisen työkalun määrittely vie arviolta yli 1 000 tokenia. Huomio ei kaada `--strict`-ajoja.
+
 ## [0.4.0] - 2026-11-01
 
 ### Lisätty

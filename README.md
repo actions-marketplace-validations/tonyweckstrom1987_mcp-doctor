@@ -83,6 +83,7 @@ Yhteenveto: 3 virhettä, 4 varoitusta, 0 huomiota -> EPÄONNISTUI
 | `--timeout-ms <luku>` | yksittäisen pyynnön aikakatkaisu, oletus 10000 |
 | `--env <NIMI>` | välittää ympäristömuuttujan stdio-palvelimelle (toistettava) |
 | `--bearer-env <NIMI>` | HTTP-palvelimen Bearer-token tästä muuttujasta |
+| `--max-tokens <luku>` | tokenimittarin raja: työkalumäärittelyjen arvioitu yhteiskoko, ylitys on virhe |
 | `--version` | tulostaa version |
 
 Poistumiskoodit: `0` kunnossa, `1` löydöksiä (virhe, tai varoitus `--strict`-tilassa), `2` käyttö- tai tiedostovirhe, `3` odottamaton sisäinen virhe.
@@ -107,6 +108,8 @@ Poistumiskoodit: `0` kunnossa, `1` löydöksiä (virhe, tai varoitus `--strict`-
 | `SCHEMA_PROP_UNTYPED` | varoitus | kentällä ei ole `type`/`enum`/`const`/`$ref`/`anyOf`/`oneOf`/`allOf` |
 | `SCHEMA_ARRAY_ITEMS_MISSING` | varoitus | taulukkokentältä puuttuu `items` (millä tahansa tasolla); esim. Gemini ja OpenAI:n strict-tila hylkäävät skeeman |
 | `SCHEMA_NESTED_DESC_MISSING` / `SCHEMA_NESTED_PROP_UNTYPED` | huomio | sisäkkäisen objektin, taulukon alkion tai `anyOf`/`oneOf`/`allOf`-haaran kentältä puuttuu kuvaus / tyyppi. Polku näkyy viestissä, esim. `entities[].name` tai `filter.anyOf[0].name` |
+| `TOOL_TOKENS_HIGH` | huomio | yksittäisen työkalun määrittely vie arviolta yli 1 000 tokenia |
+| `TOOLS_TOKEN_BUDGET_EXCEEDED` | virhe | työkalumäärittelyjen arvioitu yhteiskoko ylittää `--max-tokens`-rajan |
 | `OUTPUT_SCHEMA_NOT_OBJECT` | virhe | `outputSchema` ei ole `object` |
 | `SMOKE_TOOL_NOT_FOUND` | virhe | savuajotiedosto nimeää työkalun, jota palvelimella ei ole |
 | `SMOKE_TOOL_ERROR` | virhe | työkalu palautti `isError`, vaikka virhettä ei odotettu |
@@ -114,6 +117,20 @@ Poistumiskoodit: `0` kunnossa, `1` löydöksiä (virhe, tai varoitus `--strict`-
 | `SMOKE_CALL_FAILED` | virhe | kutsu epäonnistui (aikakatkaisu, protokollavirhe, `outputSchema`-vaatimus rikottu) |
 | `SMOKE_EMPTY_RESULT` | varoitus | tulos on tyhjä |
 | `SMOKE_SLOW` | varoitus | vastaus kesti yli `maxMs` (oletus 5000) |
+
+## Tokenimittari
+
+Asiakas (Claude, Cursor ym.) lähettää mallille jokaisen työkalun nimen, kuvauksen ja syöteskeeman **jokaisessa pyynnössä**, vaikka työkalua ei käytettäisi. Monen palvelimen kanssa työkalumäärittelyt voivat viedä kymmeniä tuhansia tokeneita ennen kuin käyttäjä on sanonut mitään. mcp-doctor raportoi koon jokaisessa ajossa:
+
+```
+$ npx @tonyweckstrom/mcp-doctor --max-tokens 200 -- node examples/demo/jalkeen.mjs
+VIRHE    [TOOLS_TOKEN_BUDGET_EXCEEDED] työkalumäärittelyt vievät arviolta 257 tokenia, raja on 200 (--max-tokens); suurimmat: add_note 104, search_notes 84, delete_note 69
+Tokenit (arvio): työkalumäärittelyt yhteensä 257 / raja 200; suurimmat: add_note 104, search_notes 84, delete_note 69
+```
+
+`--max-tokens 4000` (actionissa `max-tokens: 4000`) tekee siitä CI-rajan: kun joku lisää työkalun tai paisuttaa kuvausta yli rajan, ajo kaatuu ja viesti kertoo suurimmat työkalut. Arvio on merkit / 4, eli suuntaa antava (noin ±25 % mallista riippuen). Se sopii vertailuun ja rajaksi, ei laskutukseen.
+
+*English: mcp-doctor estimates how many tokens your tool definitions cost in every request (name + description + input schema, chars/4) and can fail CI with `--max-tokens`.*
 
 ## Savuajo
 
@@ -190,7 +207,7 @@ mcp-doctor on tarkoituksella pieni ja rajattu yhteen tehtävään: yksi komento 
 - **Savuajo vain nimeämillesi työkaluille:** työkaluja kutsutaan vain tiedostossa (`--smoke`) nimetyillä, itse määritellyillä argumenteilla. Mitään ei kutsuta arvaamalla.
 - **Ei verkkoa muualle:** työkalu puhuu vain osoittamallesi palvelimelle. Ei API-avaimia, ei tilastoja, ei tiliä.
 - **Eristetty Action:** stdio-palvelin näkee vain nimeämäsi ympäristömuuttujat, ja Actionin syötteet eivät pääse komentoriville.
-- **Pieni ja testattu:** vähän koodia, 133 testiä oikeilla stdio- ja HTTP-testipalvelimilla.
+- **Pieni ja testattu:** vähän koodia, 145 testiä oikeilla stdio- ja HTTP-testipalvelimilla.
 
 ## Rajaukset
 
@@ -201,7 +218,7 @@ Ei tue vanhaa SSE-siirtoa eikä OAuth-kirjautumista. Tarkistaa työkalut, ei `re
 ```bash
 npm ci
 npm run typecheck
-npm test        # 133 testiä, käynnistää oikeita stdio- ja HTTP-testipalvelimia
+npm test        # 145 testiä, käynnistää oikeita stdio- ja HTTP-testipalvelimia
 ```
 
 Testit ajetaan oikeita MCP-palvelimia vastaan (`test/fixtures/`): kunnossa oleva, huonosti määritelty, väärää protokollaversiota puhuva, heti kaatuva sekä sivuttava. Ennen julkaisua koodiin tehtiin tahallisia rikkomisia (mutaatiot), (22 kappaletta), ja jokainen niistä kaatoi testin.

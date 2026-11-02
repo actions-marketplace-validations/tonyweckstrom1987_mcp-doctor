@@ -33,6 +33,7 @@ Valinnat:
   --json                 tulosta raportti JSONina
   --strict               varoituksetkin kaatavat ajon (exit 1)
   --timeout-ms <luku>    yksittäisen pyynnön aikakatkaisu, oletus 10000
+  --max-tokens <luku>    tokenimittarin raja: työkalumäärittelyjen arvioitu yhteiskoko ei saa ylittää tätä (ylitys on virhe)
   --env <NIMI>           välitä ympäristömuuttuja stdio-palvelimelle (toistettava)
   --bearer-env <NIMI>    lue HTTP-palvelimen Bearer-token tästä ympäristömuuttujasta
   --version              tulosta versio
@@ -48,7 +49,7 @@ interface Args {
 }
 
 const BOOL_FLAGS = new Set(["json", "strict", "help", "version"]);
-const VALUE_FLAGS = new Set(["smoke", "timeout-ms", "env", "bearer-env", "url"]);
+const VALUE_FLAGS = new Set(["smoke", "timeout-ms", "env", "bearer-env", "url", "max-tokens"]);
 
 function parseArgs(argv: string[]): Args {
   const flags = new Map<string, string[]>();
@@ -103,6 +104,9 @@ export async function main(argv: string[], io: CliIo): Promise<number> {
     const timeoutRaw = one(args, "timeout-ms");
     const timeoutMs = timeoutRaw === undefined ? 10000 : Number(timeoutRaw);
     if (!Number.isInteger(timeoutMs) || timeoutMs < 1) throw new UsageError("--timeout-ms täytyy olla positiivinen kokonaisluku");
+    const maxTokensRaw = one(args, "max-tokens");
+    const maxTokens = maxTokensRaw === undefined ? undefined : Number(maxTokensRaw);
+    if (maxTokens !== undefined && (!Number.isInteger(maxTokens) || maxTokens < 1)) throw new UsageError("--max-tokens täytyy olla positiivinen kokonaisluku");
 
     const smokePath = one(args, "smoke");
     let smoke;
@@ -159,7 +163,7 @@ export async function main(argv: string[], io: CliIo): Promise<number> {
       target = redactArgs(args.command).join(" "); // salaiselta näyttävät argumentit peitetään tulosteista
     }
 
-    const report = await diagnose({ transport, target, smoke, timeoutMs, strict: args.bools.has("strict"), stderrTail });
+    const report = await diagnose({ transport, target, smoke, timeoutMs, strict: args.bools.has("strict"), maxTokens, stderrTail });
     io.stdout(args.bools.has("json") ? formatJson(report) : formatText(report));
     return report.ok ? EXIT_OK : EXIT_FINDINGS;
   } catch (err) {
