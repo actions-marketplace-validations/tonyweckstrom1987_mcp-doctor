@@ -85,8 +85,8 @@ Yhteenveto: 3 virhettä, 4 varoitusta, 0 huomiota -> EPÄONNISTUI
 | `--timeout-ms <luku>` | yksittäisen pyynnön aikakatkaisu, oletus 10000 |
 | `--env <NIMI>` | välittää ympäristömuuttujan stdio-palvelimelle (toistettava) |
 | `--bearer-env <NIMI>` | HTTP-palvelimen Bearer-token tästä muuttujasta |
-| `--auth` (v0.5.0) | HTTP-palvelimen OAuth-tarkistus (401, WWW-Authenticate, RFC 9728 ja 8414 -metatiedot, PKCE S256, refresh_token) |
-| `--max-tokens <luku>` (v0.5.0) | tokenimittarin raja: työkalumäärittelyjen arvioitu yhteiskoko, ylitys on virhe |
+| `--auth` | HTTP-palvelimen OAuth-tarkistus (401, WWW-Authenticate, RFC 9728 ja 8414 -metatiedot, PKCE S256, refresh_token) |
+| `--max-tokens <luku>` | tokenimittarin raja: työkalumäärittelyjen arvioitu yhteiskoko, ylitys on virhe |
 | `--version` | tulostaa version |
 
 Poistumiskoodit: `0` kunnossa, `1` löydöksiä (virhe, tai varoitus `--strict`-tilassa), `2` käyttö- tai tiedostovirhe, `3` odottamaton sisäinen virhe.
@@ -111,7 +111,7 @@ Poistumiskoodit: `0` kunnossa, `1` löydöksiä (virhe, tai varoitus `--strict`-
 | `SCHEMA_PROP_UNTYPED` | varoitus | kentällä ei ole `type`/`enum`/`const`/`$ref`/`anyOf`/`oneOf`/`allOf` |
 | `SCHEMA_ARRAY_ITEMS_MISSING` | varoitus | taulukkokentältä puuttuu `items` (millä tahansa tasolla); esim. Gemini ja OpenAI:n strict-tila hylkäävät skeeman |
 | `SCHEMA_NESTED_DESC_MISSING` / `SCHEMA_NESTED_PROP_UNTYPED` | huomio | sisäkkäisen objektin, taulukon alkion tai `anyOf`/`oneOf`/`allOf`-haaran kentältä puuttuu kuvaus / tyyppi. Polku näkyy viestissä, esim. `entities[].name` tai `filter.anyOf[0].name` |
-| `AUTH_*` (`--auth`) | virhe / varoitus / huomio | OAuth: `AUTH_RESOURCE_METADATA_MISSING`, `AUTH_SERVERS_MISSING`, `AUTH_SERVER_METADATA_MISSING`, `AUTH_ENDPOINT_MISSING`, `AUTH_PKCE_S256_MISSING`, `AUTH_INSECURE_URL` (virhe); `AUTH_WWW_AUTHENTICATE_MISSING`, `AUTH_RESOURCE_MISMATCH`, `AUTH_REFRESH_TOKEN_UNSUPPORTED` (varoitus); `AUTH_RESOURCE_METADATA_HINT_MISSING`, `AUTH_REGISTRATION_UNSUPPORTED`, `AUTH_NOT_REQUIRED`, `AUTH_OK` (huomio) |
+| `AUTH_*` (`--auth`) | virhe / varoitus / huomio | OAuth: `AUTH_RESOURCE_METADATA_MISSING`, `AUTH_SERVERS_MISSING`, `AUTH_SERVER_METADATA_MISSING`, `AUTH_ENDPOINT_MISSING`, `AUTH_PKCE_S256_MISSING`, `AUTH_INSECURE_URL`, `AUTH_CHECK_FAILED`, `AUTH_RESOURCE_INVALID` (virhe); `AUTH_WWW_AUTHENTICATE_MISSING`, `AUTH_RESOURCE_MISMATCH`, `AUTH_REFRESH_TOKEN_UNSUPPORTED` (varoitus); `AUTH_RESOURCE_METADATA_HINT_MISSING`, `AUTH_REGISTRATION_UNSUPPORTED`, `AUTH_LOGIN_REQUIRED`, `AUTH_NOT_REQUIRED`, `AUTH_OK` (huomio) |
 | `TOOL_TOKENS_HIGH` | huomio | yksittäisen työkalun määrittely vie arviolta yli 1 000 tokenia |
 | `TOOLS_TOKEN_BUDGET_EXCEEDED` | virhe | työkalumäärittelyjen arvioitu yhteiskoko ylittää `--max-tokens`-rajan |
 | `OUTPUT_SCHEMA_NOT_OBJECT` | virhe | `outputSchema` ei ole `object` |
@@ -123,8 +123,6 @@ Poistumiskoodit: `0` kunnossa, `1` löydöksiä (virhe, tai varoitus `--strict`-
 | `SMOKE_SLOW` | varoitus | vastaus kesti yli `maxMs` (oletus 5000) |
 
 ## OAuth-tarkistus (`--auth`)
-
-> **Huom:** `--auth` ja `--max-tokens` (actionin syötteet `auth` ja `max-tokens`) ovat `main`-haarassa ja tulevat versiossa **v0.5.0**. Julkaistu action v0.4.1 ja npm-paketti 0.4.0 eivät vielä sisällä niitä.
 
 Moni MCP-kirjautumisongelma ("connection expired", kirjautuminen ei käynnisty, 401 ilman selitystä) johtuu palvelimen tai valtuutuspalvelimen metatiedoista. `--auth` tarkistaa ne kirjautumatta:
 
@@ -141,8 +139,6 @@ Tarkistus ei lähetä tunnuksia. Huomaa, että se tekee kirjautumattomia GET-pyy
 *English: `--auth` checks an HTTP MCP server's OAuth setup without credentials: 401 + WWW-Authenticate, RFC 9728 protected resource metadata, RFC 8414/OIDC authorization server metadata, PKCE S256, refresh_token grant, client registration and https.*
 
 ## Tokenimittari
-
-> **Huom:** `--auth` ja `--max-tokens` (actionin syötteet `auth` ja `max-tokens`) ovat `main`-haarassa ja tulevat versiossa **v0.5.0**. Julkaistu action v0.4.1 ja npm-paketti 0.4.0 eivät vielä sisällä niitä.
 
 Asiakas (Claude, Cursor ym.) lähettää mallille jokaisen työkalun nimen, kuvauksen ja syöteskeeman **jokaisessa pyynnössä**, vaikka työkalua ei käytettäisi. Monen palvelimen kanssa työkalumäärittelyt voivat viedä kymmeniä tuhansia tokeneita ennen kuin käyttäjä on sanonut mitään. mcp-doctor raportoi koon jokaisessa ajossa:
 
@@ -187,7 +183,7 @@ jobs:
       - uses: actions/setup-node@v7
         with: { node-version: 24 }
       - run: npm ci && npm run build   # build your own server
-      - uses: tonyweckstrom1987/mcp-doctor@v0.4.1
+      - uses: tonyweckstrom1987/mcp-doctor@v0.5.0
         with:
           command: node dist/index.js  # your server's start command
           strict: "true"               # warnings fail the job too
@@ -200,14 +196,14 @@ Pin to a version tag or a commit SHA, never `@main`. All inputs are listed below
 ```yaml
 - uses: actions/checkout@v7
 - run: npm ci && npm run build        # oma palvelimesi
-- uses: tonyweckstrom1987/mcp-doctor@v0.4.1
+- uses: tonyweckstrom1987/mcp-doctor@v0.5.0
   with:
     command: node dist/index.js
     smoke: smoke.json
     strict: "true"
 ```
 
-Lukitse Action versiotagiin (`@v0.4.1`) tai tiukemmin commit-SHA:han, älä `@main`-haaraan. Syötteet: `command` tai `url`, `smoke`, `strict`, `timeout-ms`, `env-names`, `bearer-env`, `auth`, `max-tokens`. Stdio-palvelin näkee vain nimeämäsi ympäristömuuttujat: aseta arvot action-askeleen `env`-lohkossa ja listaa nimet syötteellä `env-names` (välilyönnein erotettuna). HTTP-palvelimen tokenin aseta samoin `env`-lohkossa secretistä ja anna muuttujan nimi syötteellä `bearer-env`. Syötteet välitetään kuoreen ympäristömuuttujina, ei komentoriville, joten ne eivät voi injektoida komentoja.
+Lukitse Action versiotagiin (`@v0.5.0`) tai tiukemmin commit-SHA:han, älä `@main`-haaraan. Syötteet: `command` tai `url`, `smoke`, `strict`, `timeout-ms`, `env-names`, `bearer-env`, `auth`, `max-tokens`. Stdio-palvelin näkee vain nimeämäsi ympäristömuuttujat: aseta arvot action-askeleen `env`-lohkossa ja listaa nimet syötteellä `env-names` (välilyönnein erotettuna). HTTP-palvelimen tokenin aseta samoin `env`-lohkossa secretistä ja anna muuttujan nimi syötteellä `bearer-env`. Syötteet välitetään kuoreen ympäristömuuttujina, ei komentoriville, joten ne eivät voi injektoida komentoja.
 
 ## Turvallisuus
 
@@ -231,7 +227,7 @@ mcp-doctor on tarkoituksella pieni ja rajattu yhteen tehtävään: yksi komento 
 - **Savuajo vain nimeämillesi työkaluille:** työkaluja kutsutaan vain tiedostossa (`--smoke`) nimetyillä, itse määritellyillä argumenteilla. Mitään ei kutsuta arvaamalla.
 - **Ei verkkoa muualle:** työkalu puhuu vain osoittamallesi palvelimelle. Ei API-avaimia, ei tilastoja, ei tiliä.
 - **Eristetty Action:** stdio-palvelin näkee vain nimeämäsi ympäristömuuttujat, ja Actionin syötteet eivät pääse komentoriville.
-- **Pieni ja testattu:** vähän koodia, 162 testiä oikeilla stdio- ja HTTP-testipalvelimilla.
+- **Pieni ja testattu:** vähän koodia, 164 testiä oikeilla stdio- ja HTTP-testipalvelimilla.
 
 ## Rajaukset
 
@@ -242,7 +238,7 @@ Ei tue vanhaa SSE-siirtoa eikä OAuth-kirjautumista. Tarkistaa työkalut, ei `re
 ```bash
 npm ci
 npm run typecheck
-npm test        # 162 testiä, käynnistää oikeita stdio- ja HTTP-testipalvelimia
+npm test        # 164 testiä, käynnistää oikeita stdio- ja HTTP-testipalvelimia
 ```
 
 Testit ajetaan oikeita MCP-palvelimia vastaan (`test/fixtures/`): kunnossa oleva, huonosti määritelty, väärää protokollaversiota puhuva, heti kaatuva sekä sivuttava. Ennen julkaisua koodiin tehtiin tahallisia rikkomisia (mutaatiot), (22 kappaletta), ja jokainen niistä kaatoi testin.

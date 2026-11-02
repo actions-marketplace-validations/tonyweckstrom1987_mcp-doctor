@@ -4,6 +4,8 @@ Muoto perustuu [Keep a Changelogiin](https://keepachangelog.com/fi/1.0.0/), ja v
 
 ## [Julkaisematon]
 
+## [0.5.0] - 2026-11-02
+
 ### Lisätty
 
 - Tokenimittari: raportti kertoo, montako tokenia palvelimen työkalumäärittelyt (nimi, kuvaus, syöteskeema) vievät arviolta mallin kontekstista jokaisessa pyynnössä, yhteensä ja kolme suurinta työkalua. JSON-raportissa kenttä `tokens` (`total`, `perTool`, `budget`, `method`). Arvio on merkit / 4, eli suuntaa antava (noin ±25 % mallin tokenisoijasta riippuen).
@@ -14,6 +16,10 @@ Muoto perustuu [Keep a Changelogiin](https://keepachangelog.com/fi/1.0.0/), ja v
 ### Muutettu
 
 - `README.md` on nyt englanniksi (Marketplace-sivu näyttää sen). Aiempi suomenkielinen README siirrettiin sellaisenaan tiedostoon `README.fi.md`, johon lisättiin vain linkki englanninkieliseen versioon.
+
+### Korjattu
+
+- `--auth` ilman tokenia ei enää kaada kunnossa olevia OAuth-palvelimia. Kun palvelin vastaa 401 ja tarkistus ei saa tokenia (`--bearer-env`), kirjautumaton yhteysyritys ei ole vika. Yhteysvirhe `CONNECT_FAILED` muuttuu huomioksi `AUTH_LOGIN_REQUIRED`. Aiemmin 11 palvelinta 12:sta sai väärän virheen. Puuttuva `resource_metadata` (`AUTH_RESOURCE_METADATA_MISSING`) pysyy virheenä, koska MCP-määrittely edellyttää RFC 9728:aa.
 
 ## [0.4.1] - 2026-11-02
 

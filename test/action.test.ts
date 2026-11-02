@@ -47,9 +47,9 @@ describe("action.yml (GitHub Marketplace)", () => {
     expect(yml).not.toMatch(/uses: \.\.?\//);
   });
 
-  it("README:n ja esimerkin Action-versio vastaa package.json:ia", () => {
+  it("README:n, esimerkin ja ohjeiden Action-versio vastaa package.json:ia", () => {
     const v = (JSON.parse(lue("package.json")) as { version: string }).version;
-    for (const t of [lue("README.md"), lue("README.fi.md"), lue("examples/workflow.yml")]) {
+    for (const t of [lue("README.md"), lue("README.fi.md"), lue("examples/workflow.yml"), lue("docs/ci.md"), lue("docs/demo.md")]) {
       expect(t).toContain(`tonyweckstrom1987/mcp-doctor@v${v}`);
     }
   });

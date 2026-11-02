@@ -8,7 +8,7 @@ import { formatJson, formatText, summarize } from "./report.js";
 import { diagnose } from "./runner.js";
 import { parseSmokeSpec } from "./smoke.js";
 import { short } from "./text.js";
-import { UsageError } from "./types.js";
+import { type Finding, UsageError } from "./types.js";
 import { VERSIO } from "./versio.js";
 
 export const EXIT_OK = 0;
@@ -172,7 +172,15 @@ export async function main(argv: string[], io: CliIo): Promise<number> {
     const authFindings = args.bools.has("auth") && url !== undefined ? await authCheck(url, (u, init) => fetch(u, init), timeoutMs) : [];
     let report = await diagnose({ transport, target, smoke, timeoutMs, strict, maxTokens, stderrTail });
     if (authFindings.length > 0) {
-      const findings = [...authFindings, ...report.findings];
+      // Kun palvelin vaati kirjautumisen (401) eikä tokenia annettu, kirjautumaton yhteys epäonnistuu odotetusti.
+      // Se ei ole vika, joten CONNECT_FAILED muutetaan tiedoksi (muuten jokainen OAuth-palvelin näyttäisi rikkinäiseltä).
+      const loginRequired = !args.flags.has("bearer-env") && !authFindings.some((x) => x.id === "AUTH_NOT_REQUIRED" || x.id === "AUTH_CHECK_FAILED");
+      const rest = loginRequired
+        ? report.findings.map((x): Finding => (x.id === "CONNECT_FAILED"
+          ? { id: "AUTH_LOGIN_REQUIRED", severity: "info", message: "palvelin vaatii kirjautumisen: varsinaista tarkastusta ei voi ajaa ilman tokenia (--bearer-env)" }
+          : x))
+        : report.findings;
+      const findings = [...authFindings, ...rest];
       const summary = summarize(findings);
       report = { ...report, findings, summary, ok: summary.errors === 0 && (!strict || summary.warnings === 0) };
     }
