@@ -11,6 +11,26 @@ Muoto perustuu [Keep a Changelogiin](https://keepachangelog.com/fi/1.0.0/), ja v
 - `--auth`: HTTP-palvelimen OAuth-tarkistus MCP:n valtuutusmäärittelyn mukaan. Kirjautumaton initialize-pyyntö (odotetaan 401 ja `WWW-Authenticate: Bearer` + `resource_metadata`), suojatun resurssin metatiedot (RFC 9728, `resource` ja `authorization_servers`) sekä valtuutuspalvelimen metatiedot (RFC 8414 tai OpenID Connect): `authorization_endpoint`, `token_endpoint`, PKCE `S256`, `refresh_token`-myöntö, asiakkaan rekisteröinti ja https. Uudet löydökset `AUTH_*`. Tarkistus ei lähetä tunnuksia; se tekee kirjautumattomia GET-pyyntöjä myös palvelimen ilmoittamalle valtuutuspalvelimelle. Peruste: kysynnän kartoitus 2.11.2026, Claude Coden OAuth-ongelmat (esim. vanheneva yhteys ilman refresh_tokenia).
 - `TOOL_TOKENS_HIGH` (huomio): yksittäisen työkalun määrittely vie arviolta yli 1 000 tokenia. Huomio ei kaada `--strict`-ajoja.
 
+### Muutettu
+
+- `README.md` on nyt englanniksi (Marketplace-sivu näyttää sen). Aiempi suomenkielinen README siirrettiin sellaisenaan tiedostoon `README.fi.md`, johon lisättiin vain linkki englanninkieliseen versioon.
+
+## [0.4.1] - 2026-11-02
+
+### Lisätty
+
+- GitHub Marketplace -julkaisu: Action on julkaistu nimellä "MCP Doctor Health Check" (branding, kuvaus alle 125 merkkiä).
+
+### Korjattu
+
+- `action.yml`: `description`-arvon lainaamaton kaksoispiste rikkoi YAML:n ja kaatoi CI:n (#18). Arvo on nyt lainausmerkeissä.
+- `action.yml`: nimi on "MCP Doctor Health Check", koska "MCP Doctor" oli Marketplacessa varattu (#19).
+
+### Muutettu
+
+- `test/action.test.ts` lukee `action.yml`:n `yaml`-paketilla rivipohjaisen luvun sijaan, ja uusi testi kaatuu lainaamattomaan `: `-yhdistelmään.
+- README, `examples/workflow.yml`, `docs/ci.md` ja `docs/demo.md` viittaavat Actioniin muodossa `@v0.4.1`.
+
 ## [0.4.0] - 2026-11-01
 
 ### Lisätty
