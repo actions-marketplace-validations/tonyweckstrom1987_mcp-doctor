@@ -4,6 +4,8 @@ Muoto perustuu [Keep a Changelogiin](https://keepachangelog.com/fi/1.0.0/), ja v
 
 ## [Julkaisematon]
 
+## [0.5.0] - 2026-11-02
+
 ### Lisätty
 
 - Tokenimittari: raportti kertoo, montako tokenia palvelimen työkalumäärittelyt (nimi, kuvaus, syöteskeema) vievät arviolta mallin kontekstista jokaisessa pyynnössä, yhteensä ja kolme suurinta työkalua. JSON-raportissa kenttä `tokens` (`total`, `perTool`, `budget`, `method`). Arvio on merkit / 4, eli suuntaa antava (noin ±25 % mallin tokenisoijasta riippuen).

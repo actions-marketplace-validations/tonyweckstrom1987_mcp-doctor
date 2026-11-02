@@ -19,7 +19,7 @@ jobs:
       - uses: actions/setup-node@v7
         with: { node-version: 24 }
       - run: npm ci && npm run build   # build your own server
-      - uses: tonyweckstrom1987/mcp-doctor@v0.4.1
+      - uses: tonyweckstrom1987/mcp-doctor@v0.5.0
         with:
           command: node dist/index.js  # your server's start command
           strict: "true"               # warnings fail the job too
@@ -27,7 +27,7 @@ jobs:
 
 Pin to a version tag or a commit SHA, never `@main`.
 
-Inputs: `command` or `url` (use one of them), `smoke`, `strict`, `timeout-ms`, `env-names`, `bearer-env`, `auth` (OAuth check for `url`) and `max-tokens` (token budget) from v0.5.0.
+Inputs: `command` or `url` (use one of them), `smoke`, `strict`, `timeout-ms`, `env-names`, `bearer-env`, `auth` (OAuth check for `url`) and `max-tokens` (token budget).
 
 - A stdio server sees only the environment variables you name. Set the values in the `env` block of the action step and list the names (separated by spaces) in `env-names`.
 - For an HTTP server, set the token from a secret in the `env` block and pass the variable's name in `bearer-env`.
@@ -76,8 +76,8 @@ Yhteenveto: 0 virhettä, 0 varoitusta, 0 huomiota -> OK
 | `--timeout-ms <number>` | timeout for a single request, default 10000 |
 | `--env <NAME>` | pass an environment variable to the stdio server (repeatable) |
 | `--bearer-env <NAME>` | read the HTTP server's Bearer token from this variable |
-| `--auth` (v0.5.0) | OAuth check for an HTTP server (401, WWW-Authenticate, RFC 9728 and 8414 metadata, PKCE S256, refresh_token) |
-| `--max-tokens <number>` (v0.5.0) | token budget: estimated total size of the tool definitions; exceeding it is an error |
+| `--auth` | OAuth check, only together with `--url` (401, WWW-Authenticate, RFC 9728 and 8414 metadata, PKCE S256, refresh_token) |
+| `--max-tokens <number>` | token budget: estimated total size of the tool definitions; exceeding it is an error |
 | `--version` | print the version |
 
 Exit codes: `0` healthy, `1` findings (an error, or a warning with `--strict`), `2` usage or file error, `3` unexpected internal error.
@@ -117,9 +117,9 @@ Fields: `tool` (required), `arguments` (default `{}`), `expectError` (default `f
 | `SCHEMA_PROP_UNTYPED` | warning | a property has none of `type`/`enum`/`const`/`$ref`/`anyOf`/`oneOf`/`allOf` |
 | `SCHEMA_ARRAY_ITEMS_MISSING` | warning | an array property has no `items` (at any level); for example Gemini and OpenAI strict mode reject such schemas |
 | `SCHEMA_NESTED_DESC_MISSING` / `SCHEMA_NESTED_PROP_UNTYPED` | info | a property inside a nested object, array item or `anyOf`/`oneOf`/`allOf` branch has no description / type. The path is in the message, e.g. `entities[].name` |
-| `TOOL_TOKENS_HIGH` | info | a single tool definition costs an estimated 1,000+ tokens |
+| `TOOL_TOKENS_HIGH` | info | a single tool definition costs an estimated more than 1,000 tokens |
 | `TOOLS_TOKEN_BUDGET_EXCEEDED` | error | the estimated total size of the tool definitions exceeds `--max-tokens` |
-| `AUTH_*` (`--auth`) | error / warning / info | OAuth: `AUTH_RESOURCE_METADATA_MISSING`, `AUTH_SERVERS_MISSING`, `AUTH_SERVER_METADATA_MISSING`, `AUTH_ENDPOINT_MISSING`, `AUTH_PKCE_S256_MISSING`, `AUTH_INSECURE_URL` (error); `AUTH_WWW_AUTHENTICATE_MISSING`, `AUTH_RESOURCE_MISMATCH`, `AUTH_REFRESH_TOKEN_UNSUPPORTED` (warning); `AUTH_RESOURCE_METADATA_HINT_MISSING`, `AUTH_REGISTRATION_UNSUPPORTED`, `AUTH_LOGIN_REQUIRED`, `AUTH_NOT_REQUIRED`, `AUTH_OK` (info) |
+| `AUTH_*` (`--auth`) | error / warning / info | OAuth: `AUTH_RESOURCE_METADATA_MISSING`, `AUTH_SERVERS_MISSING`, `AUTH_SERVER_METADATA_MISSING`, `AUTH_ENDPOINT_MISSING`, `AUTH_PKCE_S256_MISSING`, `AUTH_INSECURE_URL`, `AUTH_CHECK_FAILED`, `AUTH_RESOURCE_INVALID` (error); `AUTH_WWW_AUTHENTICATE_MISSING`, `AUTH_RESOURCE_MISMATCH`, `AUTH_REFRESH_TOKEN_UNSUPPORTED` (warning); `AUTH_RESOURCE_METADATA_HINT_MISSING`, `AUTH_REGISTRATION_UNSUPPORTED`, `AUTH_LOGIN_REQUIRED`, `AUTH_NOT_REQUIRED`, `AUTH_OK` (info) |
 | `OUTPUT_SCHEMA_NOT_OBJECT` | error | `outputSchema` is not an `object` |
 | `SMOKE_TOOL_NOT_FOUND` | error | the smoke file names a tool the server does not have |
 | `SMOKE_TOOL_ERROR` | error | the tool returned `isError` although no error was expected |
@@ -133,8 +133,6 @@ Nested schemas are checked up to 8 levels deep. The check is lightweight (struct
 
 ## Token budget
 
-> **Note:** `--auth` and `--max-tokens` (action inputs `auth` and `max-tokens`) are in `main` and will ship in **v0.5.0**. The released v0.4.1 action and the npm package 0.4.0 do not have them yet.
-
 Clients (Claude, Cursor and others) send every tool's name, description and input schema to the model **in every request**, whether the tool is used or not. With several servers, tool definitions can take tens of thousands of tokens before the user has said anything. mcp-doctor reports the size on every run:
 
 ```
@@ -146,8 +144,6 @@ Tokenit (arvio): työkalumäärittelyt yhteensä 257 / raja 200; suurimmat: add_
 `--max-tokens 4000` (in the action: `max-tokens: "4000"`) turns it into a CI budget: when someone adds a tool or grows a description past the limit, the job fails and the message names the largest tools. The estimate is characters / 4, so treat it as a guide (roughly ±25 % depending on the model's tokenizer). It is good for comparison and budgets, not for billing. In the JSON report the numbers are in the `tokens` field.
 
 ## OAuth check (`--auth`)
-
-> **Note:** `--auth` and `--max-tokens` (action inputs `auth` and `max-tokens`) are in `main` and will ship in **v0.5.0**. The released v0.4.1 action and the npm package 0.4.0 do not have them yet.
 
 Many MCP login problems ("connection expired", login never starts, a bare 401) come from the server's or the authorization server's metadata. `--auth` checks them without logging in:
 
