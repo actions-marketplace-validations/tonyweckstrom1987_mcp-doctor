@@ -85,8 +85,8 @@ Yhteenveto: 3 virhettä, 4 varoitusta, 0 huomiota -> EPÄONNISTUI
 | `--timeout-ms <luku>` | yksittäisen pyynnön aikakatkaisu, oletus 10000 |
 | `--env <NIMI>` | välittää ympäristömuuttujan stdio-palvelimelle (toistettava) |
 | `--bearer-env <NIMI>` | HTTP-palvelimen Bearer-token tästä muuttujasta |
-| `--auth` | HTTP-palvelimen OAuth-tarkistus (401, WWW-Authenticate, RFC 9728 ja 8414 -metatiedot, PKCE S256, refresh_token) |
-| `--max-tokens <luku>` | tokenimittarin raja: työkalumäärittelyjen arvioitu yhteiskoko, ylitys on virhe |
+| `--auth` (v0.5.0) | HTTP-palvelimen OAuth-tarkistus (401, WWW-Authenticate, RFC 9728 ja 8414 -metatiedot, PKCE S256, refresh_token) |
+| `--max-tokens <luku>` (v0.5.0) | tokenimittarin raja: työkalumäärittelyjen arvioitu yhteiskoko, ylitys on virhe |
 | `--version` | tulostaa version |
 
 Poistumiskoodit: `0` kunnossa, `1` löydöksiä (virhe, tai varoitus `--strict`-tilassa), `2` käyttö- tai tiedostovirhe, `3` odottamaton sisäinen virhe.
@@ -124,6 +124,8 @@ Poistumiskoodit: `0` kunnossa, `1` löydöksiä (virhe, tai varoitus `--strict`-
 
 ## OAuth-tarkistus (`--auth`)
 
+> **Huom:** `--auth` ja `--max-tokens` (actionin syötteet `auth` ja `max-tokens`) ovat `main`-haarassa ja tulevat versiossa **v0.5.0**. Julkaistu action v0.4.1 ja npm-paketti 0.4.0 eivät vielä sisällä niitä.
+
 Moni MCP-kirjautumisongelma ("connection expired", kirjautuminen ei käynnisty, 401 ilman selitystä) johtuu palvelimen tai valtuutuspalvelimen metatiedoista. `--auth` tarkistaa ne kirjautumatta:
 
 ```bash
@@ -139,6 +141,8 @@ Tarkistus ei lähetä tunnuksia. Huomaa, että se tekee kirjautumattomia GET-pyy
 *English: `--auth` checks an HTTP MCP server's OAuth setup without credentials: 401 + WWW-Authenticate, RFC 9728 protected resource metadata, RFC 8414/OIDC authorization server metadata, PKCE S256, refresh_token grant, client registration and https.*
 
 ## Tokenimittari
+
+> **Huom:** `--auth` ja `--max-tokens` (actionin syötteet `auth` ja `max-tokens`) ovat `main`-haarassa ja tulevat versiossa **v0.5.0**. Julkaistu action v0.4.1 ja npm-paketti 0.4.0 eivät vielä sisällä niitä.
 
 Asiakas (Claude, Cursor ym.) lähettää mallille jokaisen työkalun nimen, kuvauksen ja syöteskeeman **jokaisessa pyynnössä**, vaikka työkalua ei käytettäisi. Monen palvelimen kanssa työkalumäärittelyt voivat viedä kymmeniä tuhansia tokeneita ennen kuin käyttäjä on sanonut mitään. mcp-doctor raportoi koon jokaisessa ajossa:
 

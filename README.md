@@ -27,7 +27,7 @@ jobs:
 
 Pin to a version tag or a commit SHA, never `@main`.
 
-Inputs: `command` or `url` (use one of them), `smoke`, `strict`, `timeout-ms`, `env-names`, `bearer-env`, `auth` (OAuth check for `url`), `max-tokens` (token budget).
+Inputs: `command` or `url` (use one of them), `smoke`, `strict`, `timeout-ms`, `env-names`, `bearer-env`, `auth` (OAuth check for `url`) and `max-tokens` (token budget) from v0.5.0.
 
 - A stdio server sees only the environment variables you name. Set the values in the `env` block of the action step and list the names (separated by spaces) in `env-names`.
 - For an HTTP server, set the token from a secret in the `env` block and pass the variable's name in `bearer-env`.
@@ -76,8 +76,8 @@ Yhteenveto: 0 virhettä, 0 varoitusta, 0 huomiota -> OK
 | `--timeout-ms <number>` | timeout for a single request, default 10000 |
 | `--env <NAME>` | pass an environment variable to the stdio server (repeatable) |
 | `--bearer-env <NAME>` | read the HTTP server's Bearer token from this variable |
-| `--auth` | OAuth check for an HTTP server (401, WWW-Authenticate, RFC 9728 and 8414 metadata, PKCE S256, refresh_token) |
-| `--max-tokens <number>` | token budget: estimated total size of the tool definitions; exceeding it is an error |
+| `--auth` (v0.5.0) | OAuth check for an HTTP server (401, WWW-Authenticate, RFC 9728 and 8414 metadata, PKCE S256, refresh_token) |
+| `--max-tokens <number>` (v0.5.0) | token budget: estimated total size of the tool definitions; exceeding it is an error |
 | `--version` | print the version |
 
 Exit codes: `0` healthy, `1` findings (an error, or a warning with `--strict`), `2` usage or file error, `3` unexpected internal error.
@@ -133,6 +133,8 @@ Nested schemas are checked up to 8 levels deep. The check is lightweight (struct
 
 ## Token budget
 
+> **Note:** `--auth` and `--max-tokens` (action inputs `auth` and `max-tokens`) are in `main` and will ship in **v0.5.0**. The released v0.4.1 action and the npm package 0.4.0 do not have them yet.
+
 Clients (Claude, Cursor and others) send every tool's name, description and input schema to the model **in every request**, whether the tool is used or not. With several servers, tool definitions can take tens of thousands of tokens before the user has said anything. mcp-doctor reports the size on every run:
 
 ```
@@ -144,6 +146,8 @@ Tokenit (arvio): työkalumäärittelyt yhteensä 257 / raja 200; suurimmat: add_
 `--max-tokens 4000` (in the action: `max-tokens: "4000"`) turns it into a CI budget: when someone adds a tool or grows a description past the limit, the job fails and the message names the largest tools. The estimate is characters / 4, so treat it as a guide (roughly ±25 % depending on the model's tokenizer). It is good for comparison and budgets, not for billing. In the JSON report the numbers are in the `tokens` field.
 
 ## OAuth check (`--auth`)
+
+> **Note:** `--auth` and `--max-tokens` (action inputs `auth` and `max-tokens`) are in `main` and will ship in **v0.5.0**. The released v0.4.1 action and the npm package 0.4.0 do not have them yet.
 
 Many MCP login problems ("connection expired", login never starts, a bare 401) come from the server's or the authorization server's metadata. `--auth` checks them without logging in:
 
