@@ -1,5 +1,5 @@
 name: MCP Doctor
-description: Health check for MCP servers: handshake, tool schema lint and smoke calls. Fails the workflow on findings.
+description: "Health check for MCP servers: handshake, tool schema lint and smoke calls. Fails the workflow on findings."
 author: tonyweckstrom1987
 
 branding:
