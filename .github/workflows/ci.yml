@@ -15,7 +15,7 @@ jobs:
       matrix:
         node-version: [22, 24]
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
 
       - name: Aseta Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v7
@@ -45,7 +45,7 @@ jobs:
     # Varmistaa, että repon oma GitHub Action toimii: sama polku kuin ulkopuolisella käyttäjällä.
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
 
       - name: Aja action kunnossa olevaa palvelinta vastaan
         uses: ./
@@ -69,7 +69,7 @@ jobs:
     # Testaa sen, mitä käyttäjä oikeasti saa npm:stä: pakkaa, asenna puhtaaseen kansioon, aja.
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
 
       - uses: actions/setup-node@v7
         with:
