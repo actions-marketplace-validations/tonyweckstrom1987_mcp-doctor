@@ -4,6 +4,10 @@ Muoto perustuu [Keep a Changelogiin](https://keepachangelog.com/fi/1.0.0/), ja v
 
 ## [Julkaisematon]
 
+### Lisätty
+
+- `--total-timeout-ms <luku>`: kättelyn, työkalulistauksen ja savuajon yhteinen aikaraja. `--auth`-tarkistus ajetaan ennen niitä eikä kuulu rajaan (sillä on vain `--timeout-ms` pyyntöä kohti). Aiemmin `--timeout-ms` rajasi vain yksittäisen pyynnön, joten palvelin, joka vastaa jokaiseen pyyntöön juuri rajan sisällä, tai monen kutsun savuajo saattoi pitää CI-askelta pitkään. Rajan ylittyessä tulee `TOTAL_TIMEOUT` (virhe); jos aika loppuu kesken työkalulistauksen, raportissa on lisäksi `TOOLS_LIST_FAILED` eikä väärää `TOOLS_EMPTY`-varoitusta. Ohitetut savuajon kutsut näkyvät raportissa epäonnistuneina. Oletus ennallaan (ei kokonaisrajaa). Katselmointi 30.10.2026, löydös 3.
+
 ### Muutettu
 
 - Kun HTTP-palvelin torjuu yhteyden tilalla 401 tai 403, `CONNECT_FAILED`-viesti nimeää tilan ja antaa vihjeen jatkotoimista (`--bearer-env`, `--auth`). Estoa ei yritetä kiertää.
